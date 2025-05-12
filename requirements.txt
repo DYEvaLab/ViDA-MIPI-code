@@ -1,0 +1,17 @@
+transformers==4.51.0
+accelerate
+bitsandbytes
+datasets
+debugpy
+decorator
+deepspeed
+decord
+huggingface-hub
+trl==0.8.6
+qwen-vl-utils
+openai
+peft
+liger_kernel
+triton==3.1.0
+tqdm
+numpy==1.26.4
