@@ -101,7 +101,7 @@ bash src/grounding/eval.sh
 ## TODO
 
 - [x] Release the dataset and code 
-- [ ] Release the link of MIPI Challenge Track
+- [x] Release the link of MIPI Challenge Track
 - [ ] Release the paper
 
 
