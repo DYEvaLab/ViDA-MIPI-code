@@ -1,10 +1,11 @@
 # Code for Detailed Image Quality Assessment Track in MIPI Challenge
 
-This repository contains both training code and evalutation code for [Detailed Image Quality Assessment Track in MIPI Challenge](https://www.codabench.org/competitions/8156/?secret_key=2a29d769-91c5-47d6-80c8-5f1279b7495c). This track decomposes the traditional IQA task from a score fitting task into three subtasks: fine-grained quality grounding, detailed quality perception, and reasoning quality description. We strive to empower existing vision-language foundation models to function as all-in-one solutions, enabling a single model to accomplish all tasks and excel in detailed  IQA. Training code contains a script for fine-tuning [Qwen2-VL](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct) with our [Visual Distortion Assessment Dataset](https://huggingface.co/datasets/DY-Evalab/ViDA-MIPI-dataset). For evaluation convenience, We provide a fine-tuned baseline model [Qwen2-VL-ViDA](https://huggingface.co/jasonliaonk21/Qwen2-VL-ViDA) using the [training script](./train/finetune_ViDA_lora.sh). Evaluation code contains evaluating Qwen2-VL-ViDA from image quality scoring, image quality perception and image quality grounding.
+This repository contains both training code and evalutation code for [Detailed Image Quality Assessment Track in MIPI Challenge](https://www.codabench.org/competitions/8156). This track decomposes the traditional IQA task from a score fitting task into three subtasks: fine-grained quality grounding, detailed quality perception, and reasoning quality description. We strive to empower existing vision-language foundation models to function as all-in-one solutions, enabling a single model to accomplish all tasks and excel in detailed  IQA. Training code contains a script for fine-tuning [Qwen2-VL](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct) with our [Visual Distortion Assessment Dataset](https://huggingface.co/datasets/DY-Evalab/ViDA-MIPI-dataset). For evaluation convenience, We provide a fine-tuned baseline model [Qwen2-VL-ViDA](https://huggingface.co/jasonliaonk21/Qwen2-VL-ViDA) using the [training script](./train/finetune_ViDA_lora.sh). Evaluation code contains evaluating Qwen2-VL-ViDA from image quality scoring, image quality perception and image quality grounding.
 
 
 ## Update
 - [2025/05/12] 🔥Initial Commit
+- [2025/05/20] 🔥We provide example submission zip file for Detailed Image Quality Assessment Track.
 
 ## Table of Contents
 

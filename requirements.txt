@@ -15,3 +15,4 @@ liger_kernel
 triton==3.1.0
 tqdm
 numpy==1.26.4
+gradio
