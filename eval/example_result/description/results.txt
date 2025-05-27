@@ -1,0 +1,20 @@
+=== ViDA-MIPI 描述任务评估结果 ===
+
+预测文件: eval/example_result/description/extracted_info.json
+GT文件: ../ViDA-MIPI-dataset/val/ViDA-Bench/ground_truth/bench_metadata.json
+预测样本数: 476
+GT样本数: 476
+
+=== 1. 所有退化框mAP评估 ===
+mAP: 0.2118
+
+=== 2. 关键退化准确率评估 ===
+准确率: 0.4249 (328/772)
+
+=== 3. 图片质量准确率评估 ===
+准确率: 0.7647 (364/476)
+
+=== 总结 ===
+退化检测mAP: 0.2118
+关键退化准确率: 0.4249
+图片质量准确率: 0.7647

@@ -6,6 +6,7 @@ This repository contains both training code and evalutation code for [Detailed I
 ## Update
 - [2025/05/12] 🔥Initial Commit
 - [2025/05/20] 🔥We provide example submission zip file for Detailed Image Quality Assessment Track.
+- [2025/05/27] 🔥We delete image quality scoring task and add image quality description task.
 
 ## Table of Contents
 
@@ -88,7 +89,7 @@ bash finetune_ViDA_lora.sh
 ## Evaluation
 ```bash
 cd eval
-# evaluate image quality scoring 
+# evaluate image quality description
 bash src/score/eval.sh
 # evaluate image quality perception 
 bash src/perception/eval.sh
@@ -97,6 +98,7 @@ bash src/grounding/eval.sh
 ```
 - We provide the inference outputs of Qwen2-VL-ViDA in [example_result](./eval/example_result).
 - Since the ground truth data for the validation dataset is not provided, the three scripts mentioned above can only serve as references and cannot run successfully.
+- The data format of your submission file must align with the [example submission files](example_submission.zip).
 
 
 ## TODO
