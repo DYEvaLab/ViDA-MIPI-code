@@ -42,7 +42,7 @@ A bug in the [bounding box extraction script](./eval/src/grounding/extract_bbox.
 ```
 We have fixed the extraction logic to ensure that each bounding box is correctly associated with its corresponding distortion type.
 
-Additionally, we identified that the previous COCO-based mAP calculation was flawed and resulted in artificially high scores. We have updated the metric to the VOC2010+ mAP standard for more accurate evaluation. The new baseline results are available in [scores.json](./eval/src/scores.json)
+Additionally, we identified that the previous COCO-based mAP calculation was flawed and resulted in artificially high scores. We have updated the metric to the VOC2010+ mAP standard for more accurate evaluation. The new baseline results are available in [scores.json](./eval/example_result/mipi_example_input/scores.json)
 
 ## Table of Contents
 
