@@ -1,178 +1,108 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import sys
 import json
 import argparse
-import re
 import os
-from collections import defaultdict
+import re
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--pred_file', type=str, help='Path to the prediction file')
-parser.add_argument('--save_dir', type=str, default='extracted_bboxes', help='Directory to save extracted bboxes')
-parser.add_argument('--output_file', type=str, default='result.json', help='Output filename')
-args = parser.parse_args()
+# 检查Python版本
+if sys.version_info < (3, 6):
+    print("错误：此脚本需要Python 3.6或更高版本运行。", file=sys.stderr)
+    sys.exit(1)
 
-def extract_bbox(text):
-    """
-    Extract bounding box coordinates from text
-    Format: <|box_start|>(x1,y1),(x2,y2)<|box_end|>
-    
-    Returns format: [x1, y1, x2, y2]
-    """
-    pattern = r'<\|box_start\|>\s*\((\d+),(\d+)\),\((\d+),(\d+)\)\s*<\|box_end\|>'
-    matches = re.findall(pattern, text)
-    
-    bboxes = []
-    for match in matches:
-        if len(match) == 4:
-            x1, y1, x2, y2 = map(int, match)
-            bboxes.append([x1, y1, x2, y2])
-    
-    return bboxes
+def extract_distortions_from_text(text):
+    """从预测文本中稳健地提取失真、严重性和边界框。"""
+    distortions = []
+    # 正则表达式，用于匹配以冒号结尾的失真类型，并捕获之后直到下一个失真类型或字符串末尾的所有内容。
+    # 使用 re.MULTILINE 和非贪婪匹配来正确处理块。
+    pattern = re.compile(r'(^[\w\s\-]+):\n?([\s\S]*?)(?=\n^[\w\s\-]+:|$)', re.MULTILINE)
 
-def extract_distortion_type(text):
-    """
-    Extract distortion type from text
-    """
-    # Look for distortion type, usually before colon or at the beginning
-    if "No distortion" in text:
-        return "No distortion"
-    
-    patterns = [
-        r'^([^:]+):', 
-        r'<\|object_ref_start\|>([^<]+)'
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, text)
-        if match:
-            return match.group(1).strip()
-    
-    return "Unknown"
+    for match in pattern.finditer(text):
+        distortion_type = match.group(1).strip()
+        details_block = match.group(2)
 
-def extract_severity(text):
-    """
-    Extract distortion severity from text
-    """
-    severity_patterns = [
-        r'(Minor|Moderate|Severe)',
-        r'<\|object_ref_start\|>(Minor|Moderate|Severe)'
-    ]
-    
-    for pattern in severity_patterns:
-        match = re.search(pattern, text)
-        if match:
-            return match.group(1)
-    
-    return "Unknown"
+        # 在详细信息块中查找所有 severity-box 对。一个severity可能对应多个box。
+        severity_pattern = re.compile(r'(<\|object_ref_start\|>([^<]+)<\|object_ref_end\|>)((?:\s*<\|box_start\|>\(\d+,\d+\),\(\d+,\d+\)<\|box_end\|>)+)')
 
-def save_result(data, file_path):
-    """
-    Save processed data to file
-    """
-    # Ensure directory exists
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    
-    # Check if file already exists
-    if os.path.exists(file_path):
-        print(f"File already exists: {file_path}, skipping...")
-        return
-    
-    # Save to file
-    with open(file_path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-    
-    print(f"Saved result to {file_path}")
+        for severity_match in severity_pattern.finditer(details_block):
+            severity_text = severity_match.group(2).lower().strip()
+            boxes_block = severity_match.group(3)
 
-def process_predictions(pred_file):
-    """Process all prediction data to extract bounding boxes"""
-    # Load prediction data
-    with open(pred_file, 'r') as f:
-        pred_data = json.load(f)
+            severity = "Unknown"
+            if 'moderate' in severity_text:
+                severity = 'Moderate'
+            elif 'severe' in severity_text:
+                severity = 'Severe'
+            elif 'minor' in severity_text or 'slight' in severity_text:
+                severity = 'Slight'
+
+            # 提取当前严重性对应的所有box
+            box_pattern = re.compile(r'<\|box_start\|>\((\d+),(\d+)\),\((\d+),(\d+)\)<\|box_end\|>')
+            for box_match in box_pattern.finditer(boxes_block):
+                x1, y1, x2, y2 = map(int, box_match.groups())
+                distortions.append({
+                    'distortion': distortion_type,
+                    'severity': severity,
+                    'coordinates': [x1, y1, x2, y2]
+                })
+    return distortions
+
+def process_grounding_file(data):
+    """处理输入的JSON数据，提取并替换distortions字段。"""
+    print(f"开始处理数据，共 {len(data)} 条记录。")
+    total_records = len(data)
     
-    # Copy data for adding distortions field
-    result_data = []
-    
-    # Process prediction data
-    for item in pred_data:
-        # Create new item for results
-        result_item = item.copy()
-        result_item['distortions'] = []
+    for idx, item in enumerate(data):
+        if (idx + 1) % 100 == 0:
+            print(f"已处理 {idx + 1}/{total_records} 条记录...")
         
-        # Process based on different question types
-        if 'question_type' in item and item['question_type'] == 'distortion-detection':
-            # Process distortion-detection type questions
-            # Look for answer field if pred_ans field doesn't exist
-            pred_ans = item.get('pred_ans', '')
-            if not pred_ans:
-                pred_ans = item.get('answer', '')
-            
-            # Try to extract distortion type, severity, and bounding box from text
-            lines = pred_ans.split('\n')
-            current_distortion = None
-            current_severity = None
-            bbox_count = 0
-            
-            for i, line in enumerate(lines):
-                if ':' in line and i + 1 < len(lines) and '<|box_start|>' in lines[i + 1]:
-                    current_distortion = line.split(':')[0].strip()
-                
-                if '<|object_ref_start|>' in line:
-                    severity_match = re.search(r'<\|object_ref_start\|>(Minor|Moderate|Severe)', line)
-                    if severity_match:
-                        current_severity = severity_match.group(1)
-                
-                if '<|box_start|>' in line:
-                    bbox = extract_bbox(line)
-                    if bbox and current_distortion:
-                        for box in bbox:
-                            bbox_count += 1
-                            result_item['distortions'].append({
-                                "id": f"bbox {bbox_count}",
-                                "distortion": current_distortion,
-                                "severity": current_severity or "Unknown",
-                                "coordinates": box
-                            })
-        else:
-            # Default processing as region-perception type question
-            question = item.get('question', '')
-            pred_ans = item.get('pred_ans', '')
-            if not pred_ans:
-                pred_ans = item.get('answer', '')
-            
-            # Extract bounding box from question
-            question_bbox = extract_bbox(question)
-            if question_bbox:
-                # If prediction is "no distortion", distortions remains an empty list (already initialized as [])
-                if "No distortion affects this region" not in pred_ans:
-                    # Extract predicted bounding boxes and distortion type
-                    pred_answer_bboxes = extract_bbox(pred_ans)
-                    pred_distortion_type = extract_distortion_type(pred_ans)
-                    pred_severity = extract_severity(pred_ans)
-                    
-                    if pred_answer_bboxes:
-                        for i, bbox in enumerate(pred_answer_bboxes):
-                            result_item['distortions'].append({
-                                "id": f"bbox {i+1}",
-                                "distortion": pred_distortion_type,
-                                "severity": pred_severity,
-                                "coordinates": bbox
-                            })
+        pred_ans = item.get('pred_ans', '')
+        pred_ans = item.get('response', '')
+        if item['type'] == "ref_grounding":
+            continue
+        # 提取预测bboxes
+        extracted_distortions = extract_distortions_from_text(pred_ans)
+        # 根据用户要求，直接使用提取结果覆盖原有的distortions字段
+        # item['distortions'] = extracted_distortions
+        item['pred_distortions'] = extracted_distortions
         
-        result_data.append(result_item)
-    
-    return result_data
+    print(f"所有 {total_records} 条记录处理完毕。")
+    return data
 
 def main():
-    # Ensure save directory exists
-    if not os.path.exists(args.save_dir):
-        os.makedirs(args.save_dir)
+    parser = argparse.ArgumentParser(description='从grounding JSON文件的预测文本中提取边界框和失真信息，并更新文件。')
+    parser.add_argument('--input_file', type=str, required=True, help='输入的 grounding JSON 文件路径。')
+    parser.add_argument('--output_file', type=str, required=True, help='输出更新后的JSON文件路径。')
+    args = parser.parse_args()
     
-    # Process all prediction data
-    result_data = process_predictions(args.pred_file)
+    print(f"开始执行脚本，输入文件: {args.input_file}")
     
-    # Save extracted results to a single file
-    save_path = os.path.join(args.save_dir, args.output_file)
-    save_result(result_data, save_path)
-    print(f"All results saved to {save_path}")
+    try:
+        if not os.path.exists(args.input_file):
+            raise FileNotFoundError(f"错误：输入文件不存在 -> {args.input_file}")
+        
+        print("正在加载JSON文件...")
+        with open(args.input_file, 'r', encoding='utf-8') as f:
+            grounding_data = json.load(f)
+        print("文件加载完毕。")
 
-if __name__ == '__main__':
-    main() 
+        modified_data = process_grounding_file(grounding_data)
+
+        print(f"正在将更新后的数据保存到: {args.output_file}")
+        with open(args.output_file, 'w', encoding='utf-8') as f:
+            json.dump(modified_data, f, indent=2, ensure_ascii=False)
+        print("数据成功保存。")
+
+    except json.JSONDecodeError as e:
+        print(f"错误：解析JSON文件失败: {e}", file=sys.stderr)
+    except Exception as e:
+        import traceback
+        print(f"处理过程中发生未知错误: {e}", file=sys.stderr)
+        traceback.print_exc()
+    finally:
+        print("脚本执行结束。")
+
+if __name__ == "__main__":
+    main()

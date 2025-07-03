@@ -4,7 +4,7 @@ from utils import get_model_name_from_path, load_pretrained_model
 def merge_lora(args):
     model_name = get_model_name_from_path(args.model_path)
     processor, model = load_pretrained_model(model_path=args.model_path, model_base=args.model_base,
-                                             model_name=model_name, device_map='cuda')
+                                             model_name=model_name, device_map='auto')
 
     model.save_pretrained(args.save_model_path, safe_serialization=args.safe_serialization)
     processor.save_pretrained(args.save_model_path)

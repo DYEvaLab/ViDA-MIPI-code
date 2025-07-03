@@ -7,6 +7,42 @@ This repository contains both training code and evalutation code for [Detailed I
 - [2025/05/12] 🔥Initial Commit
 - [2025/05/20] 🔥We provide example submission zip file for Detailed Image Quality Assessment Track.
 - [2025/05/27] 🔥We delete image quality scoring task and add image quality description task.
+- [2025/07/03] 🔥 We have resolved a bug in the [bounding box extraction script](./eval/src/grounding/extract_bbox.py) for the quality grounding task. Additionally, the mAP calculation method has been updated from the COCO metric to the VOC2010+ standard. The new calculation logic is available in [scoring.py](./eval/src/scoring.py).
+
+## Bug Fix
+### 2025.07.03 Bounding Box Extraction Bug
+
+A bug in the [bounding box extraction script](./eval/src/grounding/extract_bbox.py) caused all extracted boxes to be assigned the same distortion type, as shown in the example below:
+
+```json
+  {
+    "id": 37,
+    "image": "yfcc-batch2_1373.png",
+    "question_type": "distortion-detection",
+    "question": "Please provide the bounding box coordinates of all distortions in the image.",
+    "pred_ans": "Low clarity:\n<|object_ref_start|>Moderate low clarity<|object_ref_end|><|box_start|>(2,6),(998,996)<|box_end|>\nBlocking artifacts:\n<|object_ref_start|>Moderate blocking artifacts<|object_ref_end|><|box_start|>(3,6),(998,996)<|box_end|>\nUnderexposure:\n<|object_ref_start|>Severe underexposure<|object_ref_end|><|box_start|>(6,11),(345,250)<|box_end|>.<|im_end|>",
+    "distortions": [
+      {
+        "distortion": "Low clarity",
+        "severity": "Moderate",
+        "coordinates": [2, 6, 998, 996]
+      },
+      {
+        "distortion": "Low clarity",
+        "severity": "Moderate",
+        "coordinates": [3, 6, 998, 996]
+      },
+      {
+        "distortion": "Low clarity",
+        "severity": "Severe",
+        "coordinates": [6, 11, 345, 250]
+      }
+    ]
+  }
+```
+We have fixed the extraction logic to ensure that each bounding box is correctly associated with its corresponding distortion type.
+
+Additionally, we identified that the previous COCO-based mAP calculation was flawed and resulted in artificially high scores. We have updated the metric to the VOC2010+ mAP standard for more accurate evaluation. The new baseline results are available in [scores.json](./eval/src/scores.json)
 
 ## Table of Contents
 
@@ -14,7 +50,7 @@ This repository contains both training code and evalutation code for [Detailed I
   - [Update](#update)
   - [Table of Contents](#table-of-contents)
   - [Installation](#installation)
-    - [Using `requirements.txt`](#using-requirementstxt)
+  - [Using `requirements.txt`](#using-requirementstxt)
   - [Dataset Preparation](#dataset-preparation)
   - [Training](#training)
   - [Evaluation](#evaluation)
